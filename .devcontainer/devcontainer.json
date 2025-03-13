@@ -1,0 +1,36 @@
+{
+    "name": "Blog Server Dev",
+    "dockerComposeFile": "docker-compose.yml",
+    "service": "app", // 主开发容器
+    "workspaceFolder": "/workspace",
+    
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "golang.go",
+                "github.vscode-pull-request-github",
+                "editorconfig.editorconfig",
+                "streetsidesoftware.code-spell-checker"
+            ]
+        }
+    },
+  
+    // 端口转发（Gin默认8080）
+    "forwardPorts": [8080, 5432, 6379],
+  
+    // 容器启动后自动执行的命令
+    "postCreateCommand": "cd /workspace && go mod download && go install github.com/cosmtrek/air@v1.49.0",
+  
+    // 挂载本地目录到容器（避免文件权限问题）
+    "mounts": [
+      "source=${localWorkspaceFolder},target=/workspace,type=bind"
+    ],
+  
+    // 自定义环境变量
+    "remoteEnv": {
+      "APP_ENV": "development",
+      "DB_HOST": "postgres",
+      "DB_PORT": "5432",
+      "REDIS_HOST": "redis"
+    }
+  }
