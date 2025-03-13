@@ -15,8 +15,8 @@
         }
     },
   
-    // 端口转发（Gin默认8080）
-    "forwardPorts": [8080, 5432, 6379],
+    // 端口转发（Gin默认8000）
+    "forwardPorts": [8000, 5432, 6379],
   
     // 容器启动后自动执行的命令
     "postCreateCommand": "cd /workspace && go mod download && go install github.com/cosmtrek/air@v1.49.0",

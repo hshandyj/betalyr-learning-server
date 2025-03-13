@@ -1,6 +1,7 @@
 # 构建阶段
 FROM golang:1.21-alpine AS builder
 WORKDIR /app
+
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
@@ -11,5 +12,5 @@ FROM alpine:latest
 WORKDIR /app
 COPY --from=builder /app/blog-server .
 COPY configs/config.yaml ./configs/
-EXPOSE 8080
+EXPOSE 8000
 CMD ["./blog-server"]

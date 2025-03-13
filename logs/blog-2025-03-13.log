@@ -1,0 +1,4 @@
+{"level":"INFO","time":"2025-03-13T09:04:35.787Z","caller":"logger/logger.go:75","msg":"配置加载完成"}
+{"level":"INFO","time":"2025-03-13T09:04:35.814Z","caller":"logger/logger.go:75","msg":"数据库连接成功"}
+{"level":"INFO","time":"2025-03-13T09:04:35.855Z","caller":"logger/logger.go:75","msg":"数据库迁移完成"}
+{"level":"INFO","time":"2025-03-13T09:04:35.856Z","caller":"logger/logger.go:75","msg":"服务器启动","port":"8000"}
