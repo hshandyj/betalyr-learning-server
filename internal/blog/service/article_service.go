@@ -11,7 +11,7 @@ type ArticleService interface {
 	UpdateArticle(article *models.Article) error
 	DeleteArticle(id uint) error
 	GetArticle(id uint) (*models.Article, error)
-	ListArticles(page, pageSize int) ([]models.Article, int64, error)
+	ListArticles(page, pageSize int) ([]models.ArticleListItem, int64, error)
 }
 
 // articleService 文章服务实现
@@ -45,6 +45,17 @@ func (s *articleService) GetArticle(id uint) (*models.Article, error) {
 }
 
 // ListArticles 获取文章列表
-func (s *articleService) ListArticles(page, pageSize int) ([]models.Article, int64, error) {
-	return s.repo.List(page, pageSize)
+func (s *articleService) ListArticles(page, pageSize int) ([]models.ArticleListItem, int64, error) {
+	articles, total, err := s.repo.List(page, pageSize)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 转换为列表项
+	listItems := make([]models.ArticleListItem, len(articles))
+	for i, article := range articles {
+		listItems[i] = article.ToListItem()
+	}
+
+	return listItems, total, nil
 }

@@ -8,12 +8,17 @@ import (
 	"blog-server/internal/config"
 	"blog-server/internal/database"
 	"blog-server/internal/pkg/logger"
+	"time"
 
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
 
 func main() {
+	// 设置 Gin 为发布模式，禁用控制台颜色
+	gin.SetMode(gin.ReleaseMode)
+
 	// 初始化日志
 	logger.InitLogger("development")
 	defer logger.Log.Sync()
@@ -40,7 +45,25 @@ func main() {
 	articleHandler := handler.NewArticleHandler(articleService)
 
 	// 设置路由
-	r := gin.Default()
+	r := gin.New()
+	r.Use(gin.Recovery())
+	r.Use(logger.GinLogger()) // 使用统一的日志中间件
+
+	// 配置 CORS
+	r.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"http://localhost:3030"}, // 允许的前端域名
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Accept", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
+		AllowCredentials: true,
+		AllowWildcard:    true, // 允许通配符
+		MaxAge:           12 * time.Hour,
+	}))
+
+	// 添加 OPTIONS 请求的全局处理
+	r.OPTIONS("/*path", func(c *gin.Context) {
+		c.Status(200)
+	})
 
 	// 文章相关路由
 	articles := r.Group("/api/articles")
