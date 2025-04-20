@@ -106,9 +106,9 @@
 DB: DBConfig{
     Host:     "postgres",
     Port:     "5432",
-    User:     "blog_dev",
+    User:     "betalyr_lerning_dev",
     Password: "dev123",
-    DBName:   "blogdb_dev",
+    DBName:   "betalyr_lerningdb_dev",
 }
 ```
 

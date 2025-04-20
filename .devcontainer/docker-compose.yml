@@ -22,9 +22,9 @@ services:
     volumes:
       - pgdata:/var/lib/postgresql/data
     environment:
-      POSTGRES_USER: blog_dev
+      POSTGRES_USER: betalyr_lerning_dev
       POSTGRES_PASSWORD: dev123
-      POSTGRES_DB: blogdb_dev
+      POSTGRES_DB: betalyr_lerningdb_dev
     ports:
       - "5432:5432"
 

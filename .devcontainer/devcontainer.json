@@ -1,5 +1,5 @@
 {
-    "name": "Blog Server Dev",
+    "name": "Betalyr Learning Server Dev",
     "dockerComposeFile": "docker-compose.yml",
     "service": "app", // 主开发容器
     "workspaceFolder": "/workspace",
