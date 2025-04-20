@@ -182,6 +182,12 @@ DB: DBConfig{
 4. 自动部署将在GitHub Actions中运行，完成后应用将可通过以下地址访问:
    https://betalyr-learning-server.fly.dev
 
+### 注意事项
+
+- `.dockerignore`文件格式：如果您在Windows环境中开发，请确保.dockerignore文件使用Linux风格的路径分隔符(/)而不是Windows风格(\)。GitHub Actions工作流会自动修复这个问题，但本地构建时您可能需要手动调整。
+
+- 部署日志：可以在GitHub仓库的Actions页面查看部署日志和状态。
+
 ## 贡献指南
 
 欢迎提交 Issue 和 Pull Request

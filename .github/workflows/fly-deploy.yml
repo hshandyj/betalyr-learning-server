@@ -14,6 +14,16 @@ jobs:
       - name: 检出代码
         uses: actions/checkout@v4
       
+      - name: 检查并修复.dockerignore文件
+        run: |
+          if [ -f .dockerignore ]; then
+            echo "检查.dockerignore文件格式..."
+            # 将Windows风格的路径分隔符(\)替换为Linux风格(/)
+            sed -i 's/\\\*/\/*/g' .dockerignore
+            echo "修复后的.dockerignore内容:"
+            cat .dockerignore
+          fi
+      
       - name: 设置Flyctl
         uses: superfly/flyctl-actions/setup-flyctl@master
       
