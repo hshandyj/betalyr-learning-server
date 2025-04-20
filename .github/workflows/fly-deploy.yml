@@ -1,0 +1,29 @@
+name: 部署到Fly.io
+
+on:
+  push:
+    tags:
+      - 'v*'  # 匹配所有以v开头的标签，例如v1.0.0
+
+jobs:
+  deploy:
+    name: 部署应用
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+      
+      - name: 设置Flyctl
+        uses: superfly/flyctl-actions/setup-flyctl@master
+      
+      - name: 部署到Fly.io
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+          
+      - name: 应用部署通知
+        run: |
+          echo "🚀 应用 ${{ github.repository }} 已成功部署到 Fly.io"
+          echo "标签: ${{ github.ref_name }}"
+          echo "URL: https://betalyr-learning-server.fly.dev" 

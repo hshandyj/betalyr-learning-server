@@ -155,6 +155,33 @@ DB: DBConfig{
 3. 开发环境建议使用 `air` 实现热重载
 4. 生产环境部署时注意修改配置文件中的敏感信息
 
+## 自动部署配置
+
+本项目配置了GitHub Actions，在main分支打tag时自动部署到Fly.io。
+
+### 设置步骤
+
+1. 获取Fly.io API令牌:
+   ```bash
+   fly auth token
+   ```
+
+2. 在GitHub仓库中添加密钥:
+   - 进入仓库设置 -> Secrets and variables -> Actions
+   - 点击"New repository secret"
+   - 名称填写: `FLY_API_TOKEN`
+   - 值填写: 上一步获取的令牌
+   - 点击"Add secret"
+
+3. 推送tag触发部署:
+   ```bash
+   git tag v1.0.0  # 创建标签
+   git push origin v1.0.0  # 推送标签
+   ```
+
+4. 自动部署将在GitHub Actions中运行，完成后应用将可通过以下地址访问:
+   https://betalyr-learning-server.fly.dev
+
 ## 贡献指南
 
 欢迎提交 Issue 和 Pull Request
