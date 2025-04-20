@@ -70,26 +70,9 @@
 - **响应**:
   ```json
   {
-    "status": "运行中",
-    "version": "1.0.0",
-    "environment": "production",
-    "timestamp": "2023-07-01T12:00:00Z",
-    "uptime": "1h30m45.123456789s",
-    "host": "hostname",
-    "os": "linux/amd64",
-    "db_status": "正常"
+    "status": "success",
   }
   ```
-
-#### 简单健康检查接口
-- **URL**: `/health`
-- **方法**: GET
-- **响应**:
-  ```json
-  {
-    "status": "ok",
-    "time": "2023-07-01T12:00:00Z"
-  }
   ```
 
 ### 文章管理接口
