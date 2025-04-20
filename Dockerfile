@@ -5,12 +5,12 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -o blog-server ./cmd/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o betalyr-learning-server ./cmd/main.go
 
 # 运行阶段
 FROM alpine:latest
 WORKDIR /app
-COPY --from=builder /app/blog-server .
+COPY --from=builder /app/betalyr-learning-server .
 COPY configs/config.yaml ./configs/
 EXPOSE 8000
-CMD ["./blog-server"]
+CMD ["./betalyr-learning-server"]

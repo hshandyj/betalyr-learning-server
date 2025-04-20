@@ -15,7 +15,7 @@
 ```
 .
 ├── cmd/
-│   └── blog-server/        # 主程序入口
+│   └── betalyr-learning-server/        # 主程序入口
 ├── internal/
 │   ├── blog/              
 │   │   ├── handler/       # HTTP 处理器
@@ -43,7 +43,7 @@
 1. **克隆项目**
    ```bash
    git clone <项目地址>
-   cd blog-server
+   cd betalyr-learning-server
    ```
 
 2. **启动开发环境**
@@ -142,10 +142,10 @@ DB: DBConfig{
 2. **手动部署**
    ```bash
    # 编译
-   go build -o blog-server ./cmd/blog-server
+   go build -o betalyr-learning-server ./cmd/betalyr-learning-server
    
    # 运行
-   ./blog-server
+   ./betalyr-learning-server
    ```
 
 ## 注意事项

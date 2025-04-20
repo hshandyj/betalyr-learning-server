@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strconv"
 
-	"blog-server/internal/blog/models"
-	"blog-server/internal/blog/service"
+	"betalyr-learning-server/internal/blog/models"
+	"betalyr-learning-server/internal/blog/service"
 
 	"github.com/gin-gonic/gin"
 )

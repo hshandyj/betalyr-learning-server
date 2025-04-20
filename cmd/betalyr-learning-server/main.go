@@ -1,13 +1,13 @@
 package main
 
 import (
-	"blog-server/internal/blog/handler"
-	"blog-server/internal/blog/models"
-	"blog-server/internal/blog/repository"
-	"blog-server/internal/blog/service"
-	"blog-server/internal/config"
-	"blog-server/internal/database"
-	"blog-server/internal/pkg/logger"
+	"betalyr-learning-server/internal/blog/handler"
+	"betalyr-learning-server/internal/blog/models"
+	"betalyr-learning-server/internal/blog/repository"
+	"betalyr-learning-server/internal/blog/service"
+	"betalyr-learning-server/internal/config"
+	"betalyr-learning-server/internal/database"
+	"betalyr-learning-server/internal/pkg/logger"
 	"time"
 
 	"github.com/gin-contrib/cors"

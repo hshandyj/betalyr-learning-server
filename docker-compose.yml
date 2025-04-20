@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   app:
-    image: blog-server:prod
+    image: betalyr-learning-server:prod
     restart: always
     ports:
       - "80:8000"

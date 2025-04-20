@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"blog-server/internal/blog/models"
-	"blog-server/internal/database"
+	"betalyr-learning-server/internal/blog/models"
+	"betalyr-learning-server/internal/database"
 )
 
 // ArticleRepository 文章仓库接口

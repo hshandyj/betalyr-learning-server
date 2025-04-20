@@ -1,8 +1,8 @@
 package service
 
 import (
-	"blog-server/internal/blog/models"
-	"blog-server/internal/blog/repository"
+	"betalyr-learning-server/internal/blog/models"
+	"betalyr-learning-server/internal/blog/repository"
 )
 
 // ArticleService 文章服务接口

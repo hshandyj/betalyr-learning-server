@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"blog-server/internal/config"
+	"betalyr-learning-server/internal/config"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"

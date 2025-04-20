@@ -1,4 +1,4 @@
-module blog-server
+module betalyr-learning-server
 
 go 1.21.13
 
