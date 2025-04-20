@@ -21,6 +21,7 @@ type DBConfig struct {
 	User     string `yaml:"user"`
 	Password string `yaml:"password"`
 	DBName   string `yaml:"dbname"`
+	URL      string `yaml:"url"`
 }
 
 // ServerConfig 服务器配置
@@ -58,6 +59,11 @@ func expandEnvVars(value string) string {
 
 // processConfig 处理配置中的环境变量
 func processConfig(cfg *Config) {
+	// 优先检查是否存在DATABASE_URL环境变量
+	if dbURL := os.Getenv("DATABASE_URL"); dbURL != "" {
+		cfg.DB.URL = dbURL
+	}
+
 	cfg.DB.Host = expandEnvVars(cfg.DB.Host)
 	cfg.DB.Port = expandEnvVars(cfg.DB.Port)
 	cfg.DB.User = expandEnvVars(cfg.DB.User)
@@ -73,9 +79,10 @@ func NewConfig() *Config {
 		DB: DBConfig{
 			Host:     "postgres",
 			Port:     "5432",
-			User:     "betalyr_lerningdb_dev",
+			User:     "betalyr_lerning_dev",
 			Password: "dev123",
 			DBName:   "betalyr_lerningdb_dev",
+			URL:      "",
 		},
 		Server: ServerConfig{
 			Port: "8000",
