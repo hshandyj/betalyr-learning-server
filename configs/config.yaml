@@ -1,7 +1,7 @@
 db:
   host: ${DB_HOST:-postgres}
   port: ${DB_PORT:-5432}
-  user: ${DB_USER:-betalyr_lerning_dev}
+  user: ${DB_USER:-betalyr_lerningdb_dev}
   password: ${DB_PASSWORD:-dev123}
   dbname: ${DB_NAME:-betalyr_lerningdb_dev}
 

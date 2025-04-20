@@ -62,6 +62,36 @@
 
 ## API 文档
 
+### 健康检查接口
+
+#### 根路径健康状态
+- **URL**: `/`
+- **方法**: GET
+- **响应**:
+  ```json
+  {
+    "status": "运行中",
+    "version": "1.0.0",
+    "environment": "production",
+    "timestamp": "2023-07-01T12:00:00Z",
+    "uptime": "1h30m45.123456789s",
+    "host": "hostname",
+    "os": "linux/amd64",
+    "db_status": "正常"
+  }
+  ```
+
+#### 简单健康检查接口
+- **URL**: `/health`
+- **方法**: GET
+- **响应**:
+  ```json
+  {
+    "status": "ok",
+    "time": "2023-07-01T12:00:00Z"
+  }
+  ```
+
 ### 文章管理接口
 
 #### 创建文章
@@ -187,6 +217,34 @@ DB: DBConfig{
 - `.dockerignore`文件格式：如果您在Windows环境中开发，请确保.dockerignore文件使用Linux风格的路径分隔符(/)而不是Windows风格(\)。GitHub Actions工作流会自动修复这个问题，但本地构建时您可能需要手动调整。
 
 - 部署日志：可以在GitHub仓库的Actions页面查看部署日志和状态。
+
+### Fly.io数据库配置
+
+要在Fly.io上配置数据库，您有两种选择：
+
+1. **使用Fly Postgres**:
+   ```bash
+   # 创建PostgreSQL数据库
+   fly postgres create --name betalyr-db
+   
+   # 将数据库附加到应用
+   fly postgres attach --app betalyr-learning-server betalyr-db
+   ```
+   
+   这将自动设置所需的环境变量。
+
+2. **使用外部数据库**:
+   ```bash
+   # 设置数据库连接信息（敏感信息）
+   fly secrets set DB_USER=your_username
+   fly secrets set DB_PASSWORD=your_password
+   fly secrets set DB_NAME=your_dbname
+   fly secrets set DB_HOST=your_db_host
+   fly secrets set DB_PORT=5432
+   ```
+
+部署后，您可以检查数据库连接状态：
+- 访问 `https://betalyr-learning-server.fly.dev/` 查看服务状态，包括数据库连接状态
 
 ## 贡献指南
 

@@ -30,7 +30,30 @@ type ServerConfig struct {
 
 // expandEnvVars 展开环境变量
 func expandEnvVars(value string) string {
-	return os.ExpandEnv(strings.ReplaceAll(value, "${", "$"))
+	// 找到格式为 ${VAR:-default} 的模式
+	if strings.Contains(value, "${") && strings.Contains(value, ":-") && strings.Contains(value, "}") {
+		// 提取变量名和默认值
+		start := strings.Index(value, "${") + 2
+		end := strings.Index(value, "}")
+		if start > 1 && end > start {
+			varContent := value[start:end]
+			parts := strings.Split(varContent, ":-")
+			if len(parts) == 2 {
+				varName := parts[0]
+				defaultVal := parts[1]
+
+				// 从环境变量获取值，如果不存在则使用默认值
+				envVal := os.Getenv(varName)
+				if envVal != "" {
+					return envVal
+				}
+				return defaultVal
+			}
+		}
+	}
+
+	// 如果不是特殊格式，直接使用标准的环境变量替换
+	return os.ExpandEnv(value)
 }
 
 // processConfig 处理配置中的环境变量
@@ -50,7 +73,7 @@ func NewConfig() *Config {
 		DB: DBConfig{
 			Host:     "postgres",
 			Port:     "5432",
-			User:     "betalyr_lerning_dev",
+			User:     "betalyr_lerningdb_dev",
 			Password: "dev123",
 			DBName:   "betalyr_lerningdb_dev",
 		},

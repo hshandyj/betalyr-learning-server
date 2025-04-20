@@ -8,12 +8,30 @@ import (
 	"betalyr-learning-server/internal/config"
 	"betalyr-learning-server/internal/database"
 	"betalyr-learning-server/internal/pkg/logger"
+	"net/http"
+	"os"
+	"runtime"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 )
+
+// 健康状态信息
+type HealthStatus struct {
+	Status      string    `json:"status"`
+	Version     string    `json:"version"`
+	Environment string    `json:"environment"`
+	Timestamp   time.Time `json:"timestamp"`
+	Uptime      string    `json:"uptime"`
+	Host        string    `json:"host"`
+	OS          string    `json:"os"`
+	DBStatus    string    `json:"db_status"`
+}
+
+// 应用程序启动时间
+var startTime = time.Now()
 
 func main() {
 	// 设置 Gin 为发布模式，禁用控制台颜色
@@ -63,6 +81,51 @@ func main() {
 	// 添加 OPTIONS 请求的全局处理
 	r.OPTIONS("/*path", func(c *gin.Context) {
 		c.Status(200)
+	})
+
+	// 健康检查路由
+	r.GET("/", func(c *gin.Context) {
+		hostname, _ := os.Hostname()
+
+		// 检查数据库连接状态
+		dbStatus := "正常"
+		sqlDB, err := database.DB.DB()
+		if err != nil || sqlDB.Ping() != nil {
+			dbStatus = "异常"
+		}
+
+		// 版本信息（可以从环境变量获取或硬编码）
+		version := os.Getenv("APP_VERSION")
+		if version == "" {
+			version = "1.0.0" // 默认版本号
+		}
+
+		// 环境信息
+		env := os.Getenv("APP_ENV")
+		if env == "" {
+			env = "production" // 默认环境
+		}
+
+		health := HealthStatus{
+			Status:      "运行中",
+			Version:     version,
+			Environment: env,
+			Timestamp:   time.Now(),
+			Uptime:      time.Since(startTime).String(),
+			Host:        hostname,
+			OS:          runtime.GOOS + "/" + runtime.GOARCH,
+			DBStatus:    dbStatus,
+		}
+
+		c.JSON(http.StatusOK, health)
+	})
+
+	// 健康检查接口（用于Fly.io健康检查）
+	r.GET("/status", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{
+			"status": "ok",
+			"time":   time.Now(),
+		})
 	})
 
 	// 文章相关路由
