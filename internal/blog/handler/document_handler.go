@@ -17,6 +17,7 @@ type DocumentHandler interface {
 	GetUserDocs(c *gin.Context)
 	UpdateDoc(c *gin.Context)
 	PublishDoc(c *gin.Context)
+	DeleteDoc(c *gin.Context)
 }
 
 // documentHandler 实现文档处理器接口
@@ -66,11 +67,8 @@ func (h *documentHandler) GetDoc(c *gin.Context) {
 
 // CreateEmptyDoc 创建空文档
 func (h *documentHandler) CreateEmptyDoc(c *gin.Context) {
-	logger.Info("创建空文档")
-
 	// 从请求头中获取虚拟用户ID
 	virtualUserID := c.GetHeader("X-Virtual-User-ID")
-	logger.Info("虚拟用户ID", zap.String("virtualUserID", virtualUserID))
 	doc, err := h.service.CreateEmptyDoc(virtualUserID)
 	if err != nil {
 		logger.Error("创建空文档失败", zap.Error(err))
@@ -83,11 +81,12 @@ func (h *documentHandler) CreateEmptyDoc(c *gin.Context) {
 
 // GetUserDocs 获取用户的文档列表
 func (h *documentHandler) GetUserDocs(c *gin.Context) {
-	userID := c.Param("userId")
+	// 从请求头中获取虚拟用户ID
+	virtualUserID := c.GetHeader("X-Virtual-User-ID")
 
-	docs, err := h.service.GetUserDocs(userID)
+	docs, err := h.service.GetUserDocs(virtualUserID)
 	if err != nil {
-		logger.Error("获取用户文档列表失败", zap.Error(err), zap.String("userID", userID))
+		logger.Error("获取用户文档列表失败", zap.Error(err), zap.String("userID", virtualUserID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
 		return
 	}
@@ -139,4 +138,27 @@ func (h *documentHandler) PublishDoc(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, doc)
+}
+
+// DeleteDoc 删除文档
+func (h *documentHandler) DeleteDoc(c *gin.Context) {
+	documentID := c.Param("id")
+
+	// 从请求头中获取虚拟用户ID
+	virtualUserID := c.GetHeader("X-Virtual-User-ID")
+	logger.Info("删除文档", zap.String("documentID", documentID), zap.String("virtualUserID", virtualUserID))
+
+	success, err := h.service.DeleteDoc(documentID, virtualUserID)
+	if err != nil {
+		logger.Error("删除文档失败", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+
+	if !success {
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权限删除此文档或文档不存在"})
+		return
+	}
+
+	c.JSON(http.StatusOK, true)
 }

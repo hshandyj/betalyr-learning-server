@@ -91,14 +91,17 @@ func main() {
 		// 查找文档是否存在
 		documents.GET("/findDoc/:id", documentHandler.FindDoc)
 
+		// 删除文档
+		documents.DELETE("/deleteDoc/:id", documentHandler.DeleteDoc)
+
 		// 获取用户文档列表
-		documents.GET("/user/:userId", documentHandler.GetUserDocs)
+		documents.GET("/user", documentHandler.GetUserDocs)
 
 		// 发布文档
 		documents.PATCH("/:id/publish", documentHandler.PublishDoc)
 
 		// 更新文档
-		documents.PATCH("/:id", documentHandler.UpdateDoc)
+		documents.PUT("/:id", documentHandler.UpdateDoc)
 
 		// 获取文档详情（通用路由放在最后）
 		documents.GET("/:id", documentHandler.GetDoc)

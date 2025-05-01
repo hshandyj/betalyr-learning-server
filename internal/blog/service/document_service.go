@@ -16,6 +16,7 @@ type DocumentService interface {
 	GetUserDocs(userID string) ([]models.DocumentList, error)
 	UpdateDoc(id string, updates map[string]interface{}) (*models.Document, error)
 	PublishDoc(id string) (*models.Document, error)
+	DeleteDoc(id string, ownerID string) (bool, error)
 }
 
 // documentService 文档服务实现
@@ -167,4 +168,26 @@ func (s *documentService) PublishDoc(id string) (*models.Document, error) {
 	}
 
 	return doc, nil
+}
+
+// DeleteDoc 删除文档
+func (s *documentService) DeleteDoc(id string, ownerID string) (bool, error) {
+	// 获取现有文档
+	doc, err := s.repo.FindByID(id)
+	if err != nil {
+		return false, err
+	}
+
+	// 如果文档不存在或用户ID不匹配，拒绝删除
+	if doc == nil || doc.OwnerID != ownerID {
+		return false, nil
+	}
+
+	// 删除文档
+	err = s.repo.Delete(id)
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
