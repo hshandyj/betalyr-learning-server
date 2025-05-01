@@ -37,15 +37,15 @@ func main() {
 	logger.Info("数据库连接成功")
 
 	// 自动迁移数据库表
-	if err := database.DB.AutoMigrate(&models.Article{}); err != nil {
+	if err := database.DB.AutoMigrate(&models.Document{}); err != nil {
 		logger.Fatal("数据库迁移失败", zap.Error(err))
 	}
 	logger.Info("数据库迁移完成")
 
-	// 初始化依赖
-	articleRepo := repository.NewArticleRepository()
-	articleService := service.NewArticleService(articleRepo)
-	articleHandler := handler.NewArticleHandler(articleService)
+	// 初始化文档相关依赖
+	documentRepo := repository.NewDocumentRepository()
+	documentService := service.NewDocumentService(documentRepo)
+	documentHandler := handler.NewDocumentHandler(documentService)
 
 	// 设置路由
 	r := gin.New()
@@ -54,32 +54,54 @@ func main() {
 
 	// 配置 CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3030"}, // 允许的前端域名
+		AllowOrigins:     []string{"http://localhost:3030"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
-		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Accept", "Authorization"},
-		ExposeHeaders:    []string{"Content-Length"},
+		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Virtual-User-ID"},
+		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
 		AllowCredentials: true,
-		AllowWildcard:    true, // 允许通配符
+		AllowWildcard:    true,
 		MaxAge:           12 * time.Hour,
 	}))
 
-	// 添加 OPTIONS 请求的全局处理
+	// 添加预检请求处理
 	r.OPTIONS("/*path", func(c *gin.Context) {
-		c.Status(200)
+		origin := c.Request.Header.Get("Origin")
+		c.Header("Access-Control-Allow-Origin", origin)
+		c.Header("Access-Control-Allow-Methods", "GET,POST,PUT,PATCH,DELETE,OPTIONS")
+		c.Header("Access-Control-Allow-Headers", "Origin,Content-Type,Accept,Authorization,X-Requested-With,X-Virtual-User-ID")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Status(204)
 	})
+
+	// 主页/健康检查
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "success",
+			"version": "1.0.0",
+			"status":  "running",
 		})
 	})
-	// 文章相关路由
-	articles := r.Group("/api/articles")
+
+	// 文档相关路由
+	documents := r.Group("/documents")
 	{
-		articles.POST("", articleHandler.Create)
-		articles.PUT("/:id", articleHandler.Update)
-		articles.DELETE("/:id", articleHandler.Delete)
-		articles.GET("/:id", articleHandler.Get)
-		articles.GET("", articleHandler.List)
+		// 创建空文档（放在最前面）
+		documents.POST("/createEmptyDoc", documentHandler.CreateEmptyDoc)
+
+		// 查找文档是否存在
+		documents.GET("/findDoc/:id", documentHandler.FindDoc)
+
+		// 获取用户文档列表
+		documents.GET("/user/:userId", documentHandler.GetUserDocs)
+
+		// 发布文档
+		documents.PATCH("/:id/publish", documentHandler.PublishDoc)
+
+		// 更新文档
+		documents.PATCH("/:id", documentHandler.UpdateDoc)
+
+		// 获取文档详情（通用路由放在最后）
+		documents.GET("/:id", documentHandler.GetDoc)
 	}
 
 	// 启动服务器
