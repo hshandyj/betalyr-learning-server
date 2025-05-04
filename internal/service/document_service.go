@@ -217,7 +217,6 @@ func (s *documentService) PublishDoc(id string) (*models.Document, error) {
 
 // UnpublishDoc 将文档设为非公开
 func (s *documentService) UnpublishDoc(id string) (*models.Document, error) {
-	// 获取现有文档
 	doc, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, err
