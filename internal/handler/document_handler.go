@@ -1,8 +1,11 @@
 package handler
 
 import (
-	"betalyr-learning-server/internal/blog/service"
 	"betalyr-learning-server/internal/pkg/logger"
+	"betalyr-learning-server/internal/service"
+	"bytes"
+	"encoding/json"
+	"io"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -17,18 +20,22 @@ type DocumentHandler interface {
 	GetUserDocs(c *gin.Context)
 	UpdateDoc(c *gin.Context)
 	PublishDoc(c *gin.Context)
+	UnpublishDoc(c *gin.Context)
 	DeleteDoc(c *gin.Context)
+	CloudinarySignRequest(c *gin.Context)
 }
 
 // documentHandler 实现文档处理器接口
 type documentHandler struct {
-	service service.DocumentService
+	service      service.DocumentService
+	cloudService service.CloudinaryService
 }
 
 // NewDocumentHandler 创建新的文档处理器实例
-func NewDocumentHandler(service service.DocumentService) DocumentHandler {
+func NewDocumentHandler(service service.DocumentService, cloudService service.CloudinaryService) DocumentHandler {
 	return &documentHandler{
-		service: service,
+		service:      service,
+		cloudService: cloudService,
 	}
 }
 
@@ -100,11 +107,24 @@ func (h *documentHandler) UpdateDoc(c *gin.Context) {
 
 	// 解析请求体
 	var updates map[string]interface{}
+
+	// 读取请求体内容用于日志记录
+	bodyBytes, _ := c.GetRawData()
+	bodyString := string(bodyBytes)
+	logger.Info("更新文档请求体", zap.String("documentID", documentID), zap.String("body", bodyString))
+
+	// 重新设置请求体以供后续绑定使用
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
 	if err := c.ShouldBindJSON(&updates); err != nil {
 		logger.Error("解析更新内容失败", zap.Error(err))
 		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求格式"})
 		return
 	}
+
+	// 记录解析后的更新内容
+	updatesJson, _ := json.Marshal(updates)
+	logger.Info("文档更新内容", zap.String("documentID", documentID), zap.String("updates", string(updatesJson)))
 
 	doc, err := h.service.UpdateDoc(documentID, updates)
 	if err != nil {
@@ -137,7 +157,28 @@ func (h *documentHandler) PublishDoc(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, doc)
+	// 返回成功状态
+	c.JSON(http.StatusOK, true)
+}
+
+// UnpublishDoc 将文档设为非公开
+func (h *documentHandler) UnpublishDoc(c *gin.Context) {
+	documentID := c.Param("id")
+
+	doc, err := h.service.UnpublishDoc(documentID)
+	if err != nil {
+		logger.Error("取消发布文档失败", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+
+	if doc == nil {
+		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		return
+	}
+
+	// 返回成功状态
+	c.JSON(http.StatusOK, true)
 }
 
 // DeleteDoc 删除文档
@@ -161,4 +202,51 @@ func (h *documentHandler) DeleteDoc(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, true)
+}
+
+// CloudinarySignRequest 处理Cloudinary签名请求
+func (h *documentHandler) CloudinarySignRequest(c *gin.Context) {
+	// 获取请求体中的参数
+	var requestData struct {
+		ParamsToSign map[string]interface{} `json:"paramsToSign"`
+	}
+
+	// 读取请求体内容用于日志记录
+	bodyBytes, _ := c.GetRawData()
+	bodyString := string(bodyBytes)
+	logger.Info("Cloudinary签名请求体", zap.String("body", bodyString))
+
+	// 重新设置请求体以供后续绑定使用
+	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
+
+	if err := c.ShouldBindJSON(&requestData); err != nil {
+		logger.Error("解析Cloudinary签名参数失败", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求格式"})
+		return
+	}
+
+	// 记录要签名的参数
+	paramsJson, _ := json.Marshal(requestData.ParamsToSign)
+	logger.Info("Cloudinary参数", zap.String("params", string(paramsJson)))
+
+	// // 验证用户权限
+	// virtualUserID := c.GetHeader("X-Virtual-User-ID")
+	// if virtualUserID == "" {
+	// 	logger.Error("未提供用户ID，无法生成Cloudinary签名")
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	// 	return
+	// }
+
+	// 签名参数
+	signature, err := h.cloudService.SignRequest(requestData.ParamsToSign)
+	if err != nil {
+		logger.Error("生成Cloudinary签名失败", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+
+	logger.Info("生成Cloudinary签名成功", zap.String("signature", signature))
+
+	// 返回签名结果
+	c.JSON(http.StatusOK, gin.H{"signature": signature})
 }

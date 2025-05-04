@@ -10,8 +10,9 @@ import (
 
 // Config 应用配置
 type Config struct {
-	DB     DBConfig     `yaml:"db"`
-	Server ServerConfig `yaml:"server"`
+	DB         DBConfig         `yaml:"db"`
+	Server     ServerConfig     `yaml:"server"`
+	Cloudinary CloudinaryConfig `yaml:"cloudinary"`
 }
 
 // DBConfig 数据库配置
@@ -27,6 +28,13 @@ type DBConfig struct {
 // ServerConfig 服务器配置
 type ServerConfig struct {
 	Port string `yaml:"port"`
+}
+
+// CloudinaryConfig Cloudinary配置
+type CloudinaryConfig struct {
+	CloudName string `yaml:"cloud_name"`
+	APIKey    string `yaml:"api_key"`
+	APISecret string `yaml:"api_secret"`
 }
 
 // expandEnvVars 展开环境变量
@@ -70,6 +78,11 @@ func processConfig(cfg *Config) {
 	cfg.DB.Password = expandEnvVars(cfg.DB.Password)
 	cfg.DB.DBName = expandEnvVars(cfg.DB.DBName)
 	cfg.Server.Port = expandEnvVars(cfg.Server.Port)
+
+	// 处理Cloudinary配置
+	cfg.Cloudinary.CloudName = expandEnvVars(cfg.Cloudinary.CloudName)
+	cfg.Cloudinary.APIKey = expandEnvVars(cfg.Cloudinary.APIKey)
+	cfg.Cloudinary.APISecret = expandEnvVars(cfg.Cloudinary.APISecret)
 }
 
 // NewConfig 创建配置
@@ -77,15 +90,20 @@ func NewConfig() *Config {
 	// 默认配置
 	config := &Config{
 		DB: DBConfig{
-			Host:     "postgres",
-			Port:     "5432",
-			User:     "betalyr_lerning_dev",
-			Password: "dev123",
-			DBName:   "betalyr_lerningdb_dev",
+			Host:     "",
+			Port:     "",
+			User:     "",
+			Password: "",
+			DBName:   "",
 			URL:      "",
 		},
 		Server: ServerConfig{
-			Port: "8000",
+			Port: "",
+		},
+		Cloudinary: CloudinaryConfig{
+			CloudName: "",
+			APIKey:    "",
+			APISecret: "",
 		},
 	}
 

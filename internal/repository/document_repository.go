@@ -1,8 +1,8 @@
 package repository
 
 import (
-	"betalyr-learning-server/internal/blog/models"
 	"betalyr-learning-server/internal/database"
+	"betalyr-learning-server/internal/models"
 	"errors"
 
 	"gorm.io/gorm"

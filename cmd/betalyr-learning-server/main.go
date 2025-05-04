@@ -1,17 +1,19 @@
 package main
 
 import (
-	"betalyr-learning-server/internal/blog/handler"
-	"betalyr-learning-server/internal/blog/models"
-	"betalyr-learning-server/internal/blog/repository"
-	"betalyr-learning-server/internal/blog/service"
 	"betalyr-learning-server/internal/config"
 	"betalyr-learning-server/internal/database"
+	"betalyr-learning-server/internal/handler"
+	"betalyr-learning-server/internal/models"
 	"betalyr-learning-server/internal/pkg/logger"
+	"betalyr-learning-server/internal/repository"
+	"betalyr-learning-server/internal/service"
+	"fmt"
 	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"github.com/joho/godotenv"
 	"go.uber.org/zap"
 )
 
@@ -19,6 +21,12 @@ import (
 var startTime = time.Now()
 
 func main() {
+	// 加载.env文件
+	if err := godotenv.Load(); err != nil {
+		// 如果.env文件不存在，只记录警告，不终止程序
+		// 因为配置可以通过环境变量设置
+	}
+
 	// 设置 Gin 为发布模式，禁用控制台颜色
 	gin.SetMode(gin.ReleaseMode)
 
@@ -45,7 +53,18 @@ func main() {
 	// 初始化文档相关依赖
 	documentRepo := repository.NewDocumentRepository()
 	documentService := service.NewDocumentService(documentRepo)
-	documentHandler := handler.NewDocumentHandler(documentService)
+
+	// 初始化Cloudinary服务
+	cloudinaryService := service.NewCloudinaryService(cfg)
+
+	// 输出Cloudinary配置信息
+	logger.Info("Cloudinary配置",
+		zap.String("cloudName", cfg.Cloudinary.CloudName),
+		zap.String("apiKey", cfg.Cloudinary.APIKey),
+		zap.String("apiSecretLength", fmt.Sprintf("%d chars", len(cfg.Cloudinary.APISecret))))
+
+	// 初始化文档处理器，注入Cloudinary服务
+	documentHandler := handler.NewDocumentHandler(documentService, cloudinaryService)
 
 	// 设置路由
 	r := gin.New()
@@ -99,6 +118,12 @@ func main() {
 
 		// 发布文档
 		documents.PATCH("/:id/publish", documentHandler.PublishDoc)
+
+		// 取消发布文档
+		documents.PATCH("/:id/unpublish", documentHandler.UnpublishDoc)
+
+		// Cloudinary签名接口
+		documents.POST("/sign-cloudinary", documentHandler.CloudinarySignRequest)
 
 		// 更新文档
 		documents.PUT("/:id", documentHandler.UpdateDoc)
