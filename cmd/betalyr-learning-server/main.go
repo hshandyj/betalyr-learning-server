@@ -9,6 +9,7 @@ import (
 	"betalyr-learning-server/internal/repository"
 	"betalyr-learning-server/internal/service"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/gin-contrib/cors"
@@ -73,7 +74,7 @@ func main() {
 
 	// 配置 CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3030"},
+		AllowOrigins:     []string{"http://localhost:3030", "https://*.renderapp.com", "https://*.vercel.app", "https://*.fly.dev"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Virtual-User-ID"},
 		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
@@ -95,9 +96,17 @@ func main() {
 	// 主页/健康检查
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
-			"message": "success",
+			"status":  "success",
 			"version": "1.0.0",
-			"status":  "running",
+			"uptime":  time.Since(startTime).String(),
+		})
+	})
+
+	// 专用健康检查端点
+	r.GET("/health", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"status": "healthy",
+			"time":   time.Now().Format(time.RFC3339),
 		})
 	})
 
@@ -132,9 +141,21 @@ func main() {
 		documents.GET("/:id", documentHandler.GetDoc)
 	}
 
+	// 获取PORT环境变量(Render优先使用这个)
+	port := os.Getenv("PORT")
+	if port == "" {
+		// 若没有PORT环境变量，则使用配置中的端口
+		if cfg.Server.Port == "" {
+			// 若配置也没有指定，则使用默认端口8000
+			port = "8000"
+		} else {
+			port = cfg.Server.Port
+		}
+	}
+
 	// 启动服务器
-	logger.Info("服务器启动", zap.String("port", cfg.Server.Port))
-	if err := r.Run(":" + cfg.Server.Port); err != nil {
+	logger.Info("服务器启动", zap.String("port", port))
+	if err := r.Run(":" + port); err != nil {
 		logger.Fatal("服务器启动失败", zap.Error(err))
 	}
 }

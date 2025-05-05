@@ -98,7 +98,7 @@ func NewConfig() *Config {
 			URL:      "",
 		},
 		Server: ServerConfig{
-			Port: "",
+			Port: "8000", // 默认端口为8000
 		},
 		Cloudinary: CloudinaryConfig{
 			CloudName: "",
@@ -115,6 +115,11 @@ func NewConfig() *Config {
 		}
 		// 处理环境变量
 		processConfig(config)
+	}
+
+	// PORT环境变量优先级最高
+	if port := os.Getenv("PORT"); port != "" {
+		config.Server.Port = port
 	}
 
 	return config

@@ -6,7 +6,7 @@ db:
   dbname: ${DB_NAME:-}
 
 server:
-  port: ${SERVER_PORT:-} 
+  port: ${SERVER_PORT:-8000} 
   
 cloudinary:
   cloud_name: ${CLOUDINARY_CLOUD_NAME:-}

@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: betalyr-learning-server
+    env: docker
+    plan: free
+    healthCheckPath: /health
+    buildCommand: docker build -t betalyr-learning-server:prod .
+    startCommand: ./betalyr-learning-server
+    envVars:
+      - key: PORT
+        value: 8000
+      - key: GIN_MODE
+        value: release 
