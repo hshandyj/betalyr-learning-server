@@ -74,7 +74,7 @@ func main() {
 
 	// 配置 CORS
 	r.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"http://localhost:3030", "https://*.renderapp.com", "https://*.vercel.app", "https://*.fly.dev"},
+		AllowOrigins:     []string{"http://localhost:3030", "https://375566.xyz"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Length", "Content-Type", "Accept", "Authorization", "X-Requested-With", "X-Virtual-User-ID"},
 		ExposeHeaders:    []string{"Content-Length", "Content-Type"},
