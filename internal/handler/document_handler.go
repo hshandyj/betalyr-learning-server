@@ -2,11 +2,13 @@ package handler
 
 import (
 	"betalyr-learning-server/internal/pkg/logger"
+	"betalyr-learning-server/internal/pkg/middleware"
 	"betalyr-learning-server/internal/service"
 	"bytes"
 	"encoding/json"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -23,6 +25,7 @@ type DocumentHandler interface {
 	UnpublishDoc(c *gin.Context)
 	DeleteDoc(c *gin.Context)
 	CloudinarySignRequest(c *gin.Context)
+	GetPublishedDocs(c *gin.Context)
 }
 
 // documentHandler 实现文档处理器接口
@@ -74,9 +77,17 @@ func (h *documentHandler) GetDoc(c *gin.Context) {
 
 // CreateEmptyDoc 创建空文档
 func (h *documentHandler) CreateEmptyDoc(c *gin.Context) {
-	// 从请求头中获取虚拟用户ID
-	virtualUserID := c.GetHeader("X-Virtual-User-ID")
-	doc, err := h.service.CreateEmptyDoc(virtualUserID)
+	// 使用辅助函数从上下文中获取用户ID
+	userIdStr, exists := middleware.GetUserID(c)
+	if !exists {
+		logger.Error("未找到用户ID")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+
+	logger.Info("创建空文档", zap.String("userID", userIdStr))
+
+	doc, err := h.service.CreateEmptyDoc(userIdStr)
 	if err != nil {
 		logger.Error("创建空文档失败", zap.Error(err))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
@@ -88,12 +99,17 @@ func (h *documentHandler) CreateEmptyDoc(c *gin.Context) {
 
 // GetUserDocs 获取用户的文档列表
 func (h *documentHandler) GetUserDocs(c *gin.Context) {
-	// 从请求头中获取虚拟用户ID
-	virtualUserID := c.GetHeader("X-Virtual-User-ID")
+	// 使用辅助函数从上下文中获取用户ID
+	userIdStr, exists := middleware.GetUserID(c)
+	if !exists {
+		logger.Error("未找到用户ID")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
 
-	docs, err := h.service.GetUserDocs(virtualUserID)
+	docs, err := h.service.GetUserDocs(userIdStr)
 	if err != nil {
-		logger.Error("获取用户文档列表失败", zap.Error(err), zap.String("userID", virtualUserID))
+		logger.Error("获取用户文档列表失败", zap.Error(err), zap.String("userID", userIdStr))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
 		return
 	}
@@ -185,11 +201,17 @@ func (h *documentHandler) UnpublishDoc(c *gin.Context) {
 func (h *documentHandler) DeleteDoc(c *gin.Context) {
 	documentID := c.Param("id")
 
-	// 从请求头中获取虚拟用户ID
-	virtualUserID := c.GetHeader("X-Virtual-User-ID")
-	logger.Info("删除文档", zap.String("documentID", documentID), zap.String("virtualUserID", virtualUserID))
+	// 使用辅助函数从上下文中获取用户ID
+	userIdStr, exists := middleware.GetUserID(c)
+	if !exists {
+		logger.Error("未找到用户ID")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
 
-	success, err := h.service.DeleteDoc(documentID, virtualUserID)
+	logger.Info("删除文档", zap.String("documentID", documentID), zap.String("userID", userIdStr))
+
+	success, err := h.service.DeleteDoc(documentID, userIdStr)
 	if err != nil {
 		logger.Error("删除文档失败", zap.Error(err), zap.String("documentID", documentID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
@@ -249,4 +271,48 @@ func (h *documentHandler) CloudinarySignRequest(c *gin.Context) {
 
 	// 返回签名结果
 	c.JSON(http.StatusOK, gin.H{"signature": signature})
+}
+
+// GetPublishedDocs 获取所有公开发布的文章
+func (h *documentHandler) GetPublishedDocs(c *gin.Context) {
+	// 获取分页参数
+	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "20")
+
+	// 转换为整数
+	page := 1
+	limit := 20
+	if pageInt, err := strconv.Atoi(pageStr); err == nil && pageInt > 0 {
+		page = pageInt
+	}
+	if limitInt, err := strconv.Atoi(limitStr); err == nil && limitInt > 0 {
+		limit = limitInt
+	}
+
+	// 限制最大数量
+	if limit > 100 {
+		limit = 100
+	}
+
+	logger.Info("获取公开文章列表",
+		zap.Int("page", page),
+		zap.Int("limit", limit))
+
+	// 调用服务层获取数据
+	docs, total, err := h.service.GetPublishedDocs(page, limit)
+	if err != nil {
+		logger.Error("获取公开文章失败", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+
+	// 返回结果
+	c.JSON(http.StatusOK, gin.H{
+		"data": docs,
+		"meta": gin.H{
+			"total": total,
+			"page":  page,
+			"limit": limit,
+		},
+	})
 }

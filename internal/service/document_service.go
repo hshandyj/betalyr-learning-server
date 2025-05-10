@@ -22,6 +22,7 @@ type DocumentService interface {
 	PublishDoc(id string) (*models.Document, error)
 	UnpublishDoc(id string) (*models.Document, error)
 	DeleteDoc(id string, ownerID string) (bool, error)
+	GetPublishedDocs(page, limit int) ([]models.PublicDocumentList, int64, error)
 }
 
 // documentService 文档服务实现
@@ -259,4 +260,35 @@ func (s *documentService) DeleteDoc(id string, ownerID string) (bool, error) {
 	}
 
 	return true, nil
+}
+
+// GetPublishedDocs 获取所有公开的文档
+func (s *documentService) GetPublishedDocs(page, limit int) ([]models.PublicDocumentList, int64, error) {
+	// 设置默认值
+	if page < 1 {
+		page = 1
+	}
+	if limit < 1 || limit > 100 {
+		limit = 20 // 限制最大为100，防止请求过大
+	}
+
+	// 获取公开文档
+	docs, err := s.repo.GetPublishedDocs(page, limit)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 获取总数
+	totalCount, err := s.repo.CountPublishedDocs()
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// 转换为公开列表格式
+	result := make([]models.PublicDocumentList, len(docs))
+	for i, doc := range docs {
+		result[i] = doc.ToPublicDocumentList()
+	}
+
+	return result, totalCount, nil
 }
