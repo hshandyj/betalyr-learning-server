@@ -6,6 +6,7 @@ import (
 	"betalyr-learning-server/internal/handler"
 	"betalyr-learning-server/internal/models"
 	"betalyr-learning-server/internal/pkg/logger"
+	"betalyr-learning-server/internal/pkg/middleware"
 	"betalyr-learning-server/internal/repository"
 	"betalyr-learning-server/internal/service"
 	"fmt"
@@ -67,6 +68,9 @@ func main() {
 	// 初始化文档处理器，注入Cloudinary服务
 	documentHandler := handler.NewDocumentHandler(documentService, cloudinaryService)
 
+	// 初始化用户处理器
+	userHandler := handler.NewUserHandler(documentRepo)
+
 	// 设置路由
 	r := gin.New()
 	r.Use(gin.Recovery())
@@ -93,7 +97,7 @@ func main() {
 		c.Status(204)
 	})
 
-	// 主页/健康检查
+	// 主页/健康检查路由不需要身份验证
 	r.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status":  "success",
@@ -102,7 +106,7 @@ func main() {
 		})
 	})
 
-	// 专用健康检查端点
+	// 专用健康检查端点不需要身份验证
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"status": "healthy",
@@ -110,8 +114,24 @@ func main() {
 		})
 	})
 
+	// 公开文章列表不需要身份验证
+	public := r.Group("/public")
+	{
+		public.GET("/documents", documentHandler.GetPublishedDocs)
+		// Cloudinary签名接口
+		public.POST("/sign-cloudinary", documentHandler.CloudinarySignRequest)
+	}
+
+	// 需要验证的API路由
+	api := r.Group("")
+	// 应用身份验证中间件
+	api.Use(middleware.AuthChecker())
+
+	// 用户相关路由
+	api.PUT("/update-stories-user", userHandler.UpdateStoriesUser)
+
 	// 文档相关路由
-	documents := r.Group("/documents")
+	documents := api.Group("/documents")
 	{
 		// 创建空文档（放在最前面）
 		documents.POST("/createEmptyDoc", documentHandler.CreateEmptyDoc)
@@ -130,9 +150,6 @@ func main() {
 
 		// 取消发布文档
 		documents.PATCH("/:id/unpublish", documentHandler.UnpublishDoc)
-
-		// Cloudinary签名接口
-		documents.POST("/sign-cloudinary", documentHandler.CloudinarySignRequest)
 
 		// 更新文档
 		documents.PUT("/:id", documentHandler.UpdateDoc)

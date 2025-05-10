@@ -66,6 +66,16 @@ type DocumentList struct {
 	CoverImage *Image `json:"coverImage,omitempty"`
 }
 
+// PublicDocumentList 公开文档列表项模型
+type PublicDocumentList struct {
+	ID        string    `json:"id"`
+	Title     string    `json:"title"`
+	IconImage *Image    `json:"iconImage,omitempty"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
+	Tags      []string  `json:"tags,omitempty"`
+}
+
 // BeforeCreate 在创建文档前设置默认值
 func (d *Document) BeforeCreate(tx *gorm.DB) error {
 	// 如果没有设置IsPublic，默认为false
@@ -82,6 +92,19 @@ func (d *Document) ToDocumentList() DocumentList {
 		ID:         d.ID,
 		Title:      d.Title,
 		CoverImage: d.CoverImage,
+	}
+}
+
+// ToPublicDocumentList 将Document转换为PublicDocumentList
+func (d *Document) ToPublicDocumentList() PublicDocumentList {
+	// TODO: 未来可以添加从EditorJSON中提取tags的逻辑
+	return PublicDocumentList{
+		ID:        d.ID,
+		Title:     d.Title,
+		IconImage: d.IconImage,
+		CreatedAt: d.CreatedAt,
+		UpdatedAt: d.UpdatedAt,
+		Tags:      []string{}, // 暂时返回空数组
 	}
 }
 

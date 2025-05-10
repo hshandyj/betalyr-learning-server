@@ -16,6 +16,9 @@ type DocumentRepository interface {
 	Update(doc *models.Document) error
 	GetDocumentsByOwner(ownerID string) ([]models.Document, error)
 	Delete(id string) error
+	UpdateOwnerID(oldOwnerID string, newOwnerID string) (int64, error)
+	GetPublishedDocs(page, limit int) ([]models.Document, error)
+	CountPublishedDocs() (int64, error)
 }
 
 // documentRepository 实现文档仓库接口
@@ -76,4 +79,50 @@ func (r *documentRepository) GetDocumentsByOwner(ownerID string) ([]models.Docum
 // Delete 删除文档
 func (r *documentRepository) Delete(id string) error {
 	return r.db.Where("id = ?", id).Delete(&models.Document{}).Error
+}
+
+// UpdateOwnerID 批量更新文档所有者ID
+func (r *documentRepository) UpdateOwnerID(oldOwnerID string, newOwnerID string) (int64, error) {
+	result := r.db.Model(&models.Document{}).
+		Where("owner_id = ?", oldOwnerID).
+		Update("owner_id", newOwnerID)
+
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return result.RowsAffected, nil
+}
+
+// GetPublishedDocs 获取所有公开发布的文章，支持分页
+func (r *documentRepository) GetPublishedDocs(page, limit int) ([]models.Document, error) {
+	var docs []models.Document
+	offset := (page - 1) * limit
+
+	// 查询公开的文档，按更新时间降序排序
+	result := r.db.Where("is_public = ?", true).
+		Order("updated_at DESC").
+		Offset(offset).
+		Limit(limit).
+		Find(&docs)
+
+	if result.Error != nil {
+		return nil, result.Error
+	}
+
+	return docs, nil
+}
+
+// CountPublishedDocs 统计所有公开文档的数量
+func (r *documentRepository) CountPublishedDocs() (int64, error) {
+	var count int64
+	result := r.db.Model(&models.Document{}).
+		Where("is_public = ?", true).
+		Count(&count)
+
+	if result.Error != nil {
+		return 0, result.Error
+	}
+
+	return count, nil
 }
