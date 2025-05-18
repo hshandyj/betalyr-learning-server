@@ -121,13 +121,21 @@ func (h *documentHandler) GetUserDocs(c *gin.Context) {
 func (h *documentHandler) UpdateDoc(c *gin.Context) {
 	documentID := c.Param("id")
 
+	// 从上下文中获取当前用户ID
+	userIdStr, exists := middleware.GetUserID(c)
+	if !exists {
+		logger.Error("未找到用户ID")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+
 	// 解析请求体
 	var updates map[string]interface{}
 
 	// 读取请求体内容用于日志记录
 	bodyBytes, _ := c.GetRawData()
 	bodyString := string(bodyBytes)
-	logger.Info("更新文档请求体", zap.String("documentID", documentID), zap.String("body", bodyString))
+	logger.Info("更新文档请求体", zap.String("documentID", documentID), zap.String("body", bodyString), zap.String("userID", userIdStr))
 
 	// 重新设置请求体以供后续绑定使用
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
@@ -142,7 +150,7 @@ func (h *documentHandler) UpdateDoc(c *gin.Context) {
 	updatesJson, _ := json.Marshal(updates)
 	logger.Info("文档更新内容", zap.String("documentID", documentID), zap.String("updates", string(updatesJson)))
 
-	doc, err := h.service.UpdateDoc(documentID, updates)
+	doc, err := h.service.UpdateDoc(documentID, userIdStr, updates)
 	if err != nil {
 		logger.Error("更新文档失败", zap.Error(err), zap.String("documentID", documentID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
@@ -150,7 +158,7 @@ func (h *documentHandler) UpdateDoc(c *gin.Context) {
 	}
 
 	if doc == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "无权限更新此文档或文档不存在"})
 		return
 	}
 
@@ -161,7 +169,15 @@ func (h *documentHandler) UpdateDoc(c *gin.Context) {
 func (h *documentHandler) PublishDoc(c *gin.Context) {
 	documentID := c.Param("id")
 
-	doc, err := h.service.PublishDoc(documentID)
+	// 从上下文中获取当前用户ID
+	userIdStr, exists := middleware.GetUserID(c)
+	if !exists {
+		logger.Error("未找到用户ID")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+
+	doc, err := h.service.PublishDoc(documentID, userIdStr)
 	if err != nil {
 		logger.Error("发布文档失败", zap.Error(err), zap.String("documentID", documentID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
@@ -181,7 +197,13 @@ func (h *documentHandler) PublishDoc(c *gin.Context) {
 func (h *documentHandler) UnpublishDoc(c *gin.Context) {
 	documentID := c.Param("id")
 
-	doc, err := h.service.UnpublishDoc(documentID)
+	userIdStr, exists := middleware.GetUserID(c)
+	if !exists {
+		logger.Error("未找到用户ID")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		return
+	}
+	doc, err := h.service.UnpublishDoc(documentID, userIdStr)
 	if err != nil {
 		logger.Error("取消发布文档失败", zap.Error(err), zap.String("documentID", documentID))
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})

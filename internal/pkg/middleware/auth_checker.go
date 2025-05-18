@@ -2,6 +2,8 @@ package middleware
 
 import (
 	"betalyr-learning-server/internal/pkg/logger"
+	"encoding/base64"
+	"encoding/json"
 	"net/http"
 	"strings"
 
@@ -43,18 +45,88 @@ func GetAuthType(c *gin.Context) (AuthType, bool) {
 	return authType.(AuthType), true
 }
 
-// 解析JWT令牌获取用户ID（简化版，实际应该使用JWT库解析）
+// 解析JWT令牌获取用户ID (支持Firebase认证)
 func parseJWTToken(token string) string {
-	// 这里仅为示例，实际应用中应该使用JWT库正确解析令牌
-	// 假设格式为 "Bearer xxxxx.yyyyy.zzzzz"
-	parts := strings.Split(token, ".")
-	if len(parts) != 3 || !strings.HasPrefix(token, "Bearer ") {
+	// 检查令牌格式，Firebase令牌格式为 "Bearer xxxxx.yyyyy.zzzzz"
+	if !strings.HasPrefix(token, "Bearer ") {
+		logger.Warn("令牌格式错误，缺少Bearer前缀")
 		return ""
 	}
 
-	// 实际应用中，这里应该解码JWT的payload部分并提取用户ID
-	// 这里简化处理，返回一个假的ID
-	return "jwt-user-id"
+	// 移除"Bearer "前缀
+	tokenOnly := strings.TrimPrefix(token, "Bearer ")
+
+	// 按点分割，获取三个部分
+	parts := strings.Split(tokenOnly, ".")
+	if len(parts) != 3 {
+		logger.Warn("令牌格式错误，不是有效的JWT格式")
+		return ""
+	}
+
+	// 解码payload部分（第二部分）
+	payload, err := base64UrlDecode(parts[1])
+	if err != nil {
+		logger.Error("解码JWT payload失败", zap.Error(err))
+		return ""
+	}
+
+	// 解析JSON
+	var claims map[string]interface{}
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		logger.Error("解析JWT payload JSON失败", zap.Error(err))
+		return ""
+	}
+
+	// 从claims中提取用户ID
+	// Firebase通常使用uid或sub字段作为用户ID
+	if uid, ok := claims["uid"].(string); ok && uid != "" {
+		logger.Info("从Firebase JWT中提取到uid", zap.String("uid", uid))
+		return uid
+	}
+
+	if sub, ok := claims["sub"].(string); ok && sub != "" {
+		logger.Info("从Firebase JWT中提取到sub", zap.String("sub", sub))
+		return sub
+	}
+
+	// Firebase也可能在user_id字段中存储用户ID
+	if userId, ok := claims["user_id"].(string); ok && userId != "" {
+		logger.Info("从Firebase JWT中提取到user_id", zap.String("user_id", userId))
+		return userId
+	}
+
+	// 检查Firebase特有的字段
+	if identities, ok := claims["firebase"].(map[string]interface{}); ok {
+		if sign_in_provider, exists := identities["sign_in_provider"].(string); exists {
+			logger.Info("检测到Firebase认证", zap.String("provider", sign_in_provider))
+		}
+	}
+
+	// 尝试使用email作为最后的备选
+	if email, ok := claims["email"].(string); ok && email != "" {
+		logger.Info("使用email作为用户ID", zap.String("email", email))
+		return email
+	}
+
+	// 记录完整的claims以便调试
+	claimsJson, _ := json.Marshal(claims)
+	logger.Warn("Firebase JWT中没有找到有效的用户标识", zap.String("claims", string(claimsJson)))
+	return ""
+}
+
+// base64URL解码
+func base64UrlDecode(str string) ([]byte, error) {
+	// 添加填充
+	padding := 4 - (len(str) % 4)
+	if padding < 4 {
+		str += strings.Repeat("=", padding)
+	}
+
+	// 替换URL安全字符
+	str = strings.ReplaceAll(str, "-", "+")
+	str = strings.ReplaceAll(str, "_", "/")
+
+	return base64.StdEncoding.DecodeString(str)
 }
 
 // AuthChecker 是一个中间件，用于检查请求头中是否包含X-Virtual-User-ID或Authorization字段
