@@ -18,9 +18,9 @@ type DocumentService interface {
 	GetDoc(id string) (*models.Document, error)
 	CreateEmptyDoc(ownerID string) (*models.Document, error)
 	GetUserDocs(userID string) ([]models.DocumentList, error)
-	UpdateDoc(id string, updates map[string]interface{}) (*models.Document, error)
-	PublishDoc(id string) (*models.Document, error)
-	UnpublishDoc(id string) (*models.Document, error)
+	UpdateDoc(id string, ownerID string, updates map[string]interface{}) (*models.Document, error)
+	PublishDoc(id string, ownerID string) (*models.Document, error)
+	UnpublishDoc(id string, ownerID string) (*models.Document, error)
 	DeleteDoc(id string, ownerID string) (bool, error)
 	GetPublishedDocs(page, limit int) ([]models.PublicDocumentList, int64, error)
 }
@@ -95,7 +95,7 @@ func (s *documentService) GetUserDocs(userID string) ([]models.DocumentList, err
 }
 
 // UpdateDoc 更新文档
-func (s *documentService) UpdateDoc(id string, updates map[string]interface{}) (*models.Document, error) {
+func (s *documentService) UpdateDoc(id string, ownerID string, updates map[string]interface{}) (*models.Document, error) {
 	// 获取现有文档
 	doc, err := s.repo.FindByID(id)
 	if err != nil {
@@ -103,6 +103,15 @@ func (s *documentService) UpdateDoc(id string, updates map[string]interface{}) (
 	}
 	if doc == nil {
 		return nil, nil // 文档不存在
+	}
+
+	// 验证文档所有者
+	if doc.OwnerID != ownerID {
+		logger.Warn("用户尝试更新非自己的文档",
+			zap.String("documentID", id),
+			zap.String("docOwnerID", doc.OwnerID),
+			zap.String("requestUserID", ownerID))
+		return nil, nil // 不是文档所有者，返回nil表示无权更新
 	}
 
 	// 记录更新前的文档状态
@@ -192,7 +201,7 @@ func (s *documentService) UpdateDoc(id string, updates map[string]interface{}) (
 }
 
 // PublishDoc 将文档设为公开
-func (s *documentService) PublishDoc(id string) (*models.Document, error) {
+func (s *documentService) PublishDoc(id string, ownerID string) (*models.Document, error) {
 	// 获取现有文档
 	doc, err := s.repo.FindByID(id)
 	if err != nil {
@@ -200,6 +209,15 @@ func (s *documentService) PublishDoc(id string) (*models.Document, error) {
 	}
 	if doc == nil {
 		return nil, nil // 文档不存在
+	}
+
+	// 验证文档所有者
+	if doc.OwnerID != ownerID {
+		logger.Warn("用户尝试发布非自己的文档",
+			zap.String("documentID", id),
+			zap.String("docOwnerID", doc.OwnerID),
+			zap.String("requestUserID", ownerID))
+		return nil, nil // 不是文档所有者，返回nil表示无权更新
 	}
 
 	// 设置为公开
@@ -217,13 +235,22 @@ func (s *documentService) PublishDoc(id string) (*models.Document, error) {
 }
 
 // UnpublishDoc 将文档设为非公开
-func (s *documentService) UnpublishDoc(id string) (*models.Document, error) {
+func (s *documentService) UnpublishDoc(id string, ownerID string) (*models.Document, error) {
 	doc, err := s.repo.FindByID(id)
 	if err != nil {
 		return nil, err
 	}
 	if doc == nil {
 		return nil, nil // 文档不存在
+	}
+
+	// 验证文档所有者
+	if doc.OwnerID != ownerID {
+		logger.Warn("用户尝试取消发布非自己的文档",
+			zap.String("documentID", id),
+			zap.String("docOwnerID", doc.OwnerID),
+			zap.String("requestUserID", ownerID))
+		return nil, nil // 不是文档所有者，返回nil表示无权更新
 	}
 
 	// 设置为非公开
