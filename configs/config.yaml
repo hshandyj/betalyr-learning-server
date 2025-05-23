@@ -12,3 +12,11 @@ cloudinary:
   cloud_name: ${CLOUDINARY_CLOUD_NAME:-}
   api_key: ${CLOUDINARY_API_KEY:-}
   api_secret: ${CLOUDINARY_API_SECRET:-} 
+
+r2:
+  endpoint: ${R2_ENDPOINT:-}
+  account_id: ${R2_ACCOUNT_ID:-}
+  access_key_id: ${R2_ACCESS_KEY_ID:-}
+  secret_access_key: ${R2_SECRET_ACCESS_KEY:-}
+  bucket: ${R2_BUCKET:-}
+  public_url: ${R2_PUBLIC_URL:-} 

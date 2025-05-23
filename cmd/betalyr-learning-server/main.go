@@ -9,6 +9,7 @@ import (
 	"betalyr-learning-server/internal/pkg/middleware"
 	"betalyr-learning-server/internal/repository"
 	"betalyr-learning-server/internal/service"
+	"betalyr-learning-server/internal/storage"
 	"fmt"
 	"os"
 	"time"
@@ -38,29 +39,47 @@ func main() {
 
 	// 加载配置
 	cfg := config.NewConfig()
-	logger.Info("配置加载完成")
+	logger.Info("Configuration loaded")
 
 	// 初始化数据库连接
 	if err := database.Initialize(cfg); err != nil {
-		logger.Fatal("数据库初始化失败", zap.Error(err))
+		logger.Fatal("Database initialization failed", zap.Error(err))
 	}
-	logger.Info("数据库连接成功")
+	logger.Info("Database connection successful")
 
 	// 自动迁移数据库表
 	if err := database.DB.AutoMigrate(&models.Document{}); err != nil {
-		logger.Fatal("数据库迁移失败", zap.Error(err))
+		logger.Fatal("Database migration failed", zap.Error(err))
 	}
-	logger.Info("数据库迁移完成")
+	logger.Info("Database migration completed")
+
+	// 初始化R2对象存储 (如果配置了R2)
+	if cfg.R2.Endpoint != "" {
+		if err := storage.InitializeR2(cfg); err != nil {
+			logger.Warn("R2 initialization failed, media storage will not be available", zap.Error(err))
+		} else {
+			logger.Info("R2 object storage initialization successful")
+		}
+	} else {
+		logger.Warn("R2 object storage not configured, media storage will not be available")
+	}
 
 	// 初始化文档相关依赖
 	documentRepo := repository.NewDocumentRepository()
 	documentService := service.NewDocumentService(documentRepo)
 
+	// // 初始化媒体存储库 (R2初始化成功时才创建)
+	// var mediaRepo repository.MediaRepository
+	// if storage.R2Client != nil {
+	// 	mediaRepo = repository.NewMediaRepository()
+	// 	logger.Info("媒体存储库初始化成功")
+	// }
+
 	// 初始化Cloudinary服务
 	cloudinaryService := service.NewCloudinaryService(cfg)
 
 	// 输出Cloudinary配置信息
-	logger.Info("Cloudinary配置",
+	logger.Info("Cloudinary configuration",
 		zap.String("cloudName", cfg.Cloudinary.CloudName),
 		zap.String("apiKey", cfg.Cloudinary.APIKey),
 		zap.String("apiSecretLength", fmt.Sprintf("%d chars", len(cfg.Cloudinary.APISecret))))
@@ -171,8 +190,8 @@ func main() {
 	}
 
 	// 启动服务器
-	logger.Info("服务器启动", zap.String("port", port))
+	logger.Info("Server started", zap.String("port", port))
 	if err := r.Run(":" + port); err != nil {
-		logger.Fatal("服务器启动失败", zap.Error(err))
+		logger.Fatal("Server startup failed", zap.Error(err))
 	}
 }

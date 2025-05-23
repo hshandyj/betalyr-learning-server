@@ -48,8 +48,8 @@ func (h *documentHandler) FindDoc(c *gin.Context) {
 
 	exists, err := h.service.FindDoc(documentID)
 	if err != nil {
-		logger.Error("查询文档是否存在失败", zap.Error(err), zap.String("documentID", documentID))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to check if document exists", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -62,13 +62,13 @@ func (h *documentHandler) GetDoc(c *gin.Context) {
 
 	doc, err := h.service.GetDoc(documentID)
 	if err != nil {
-		logger.Error("获取文档失败", zap.Error(err), zap.String("documentID", documentID))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to get document", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	if doc == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		return
 	}
 
@@ -80,17 +80,17 @@ func (h *documentHandler) CreateEmptyDoc(c *gin.Context) {
 	// 使用辅助函数从上下文中获取用户ID
 	userIdStr, exists := middleware.GetUserID(c)
 	if !exists {
-		logger.Error("未找到用户ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("User ID not found")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	logger.Info("创建空文档", zap.String("userID", userIdStr))
+	logger.Info("Creating empty document", zap.String("userID", userIdStr))
 
 	doc, err := h.service.CreateEmptyDoc(userIdStr)
 	if err != nil {
-		logger.Error("创建空文档失败", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to create empty document", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -102,15 +102,15 @@ func (h *documentHandler) GetUserDocs(c *gin.Context) {
 	// 使用辅助函数从上下文中获取用户ID
 	userIdStr, exists := middleware.GetUserID(c)
 	if !exists {
-		logger.Error("未找到用户ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("User ID not found")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	docs, err := h.service.GetUserDocs(userIdStr)
 	if err != nil {
-		logger.Error("获取用户文档列表失败", zap.Error(err), zap.String("userID", userIdStr))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to get user documents", zap.Error(err), zap.String("userID", userIdStr))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -124,8 +124,8 @@ func (h *documentHandler) UpdateDoc(c *gin.Context) {
 	// 从上下文中获取当前用户ID
 	userIdStr, exists := middleware.GetUserID(c)
 	if !exists {
-		logger.Error("未找到用户ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("User ID not found")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
@@ -135,30 +135,30 @@ func (h *documentHandler) UpdateDoc(c *gin.Context) {
 	// 读取请求体内容用于日志记录
 	bodyBytes, _ := c.GetRawData()
 	bodyString := string(bodyBytes)
-	logger.Info("更新文档请求体", zap.String("documentID", documentID), zap.String("body", bodyString), zap.String("userID", userIdStr))
+	logger.Info("Updating document request body", zap.String("documentID", documentID), zap.String("body", bodyString), zap.String("userID", userIdStr))
 
 	// 重新设置请求体以供后续绑定使用
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	if err := c.ShouldBindJSON(&updates); err != nil {
-		logger.Error("解析更新内容失败", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求格式"})
+		logger.Error("Failed to parse update content", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
 
 	// 记录解析后的更新内容
 	updatesJson, _ := json.Marshal(updates)
-	logger.Info("文档更新内容", zap.String("documentID", documentID), zap.String("updates", string(updatesJson)))
+	logger.Info("Document update content", zap.String("documentID", documentID), zap.String("updates", string(updatesJson)))
 
 	doc, err := h.service.UpdateDoc(documentID, userIdStr, updates)
 	if err != nil {
-		logger.Error("更新文档失败", zap.Error(err), zap.String("documentID", documentID))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to update document", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	if doc == nil {
-		c.JSON(http.StatusForbidden, gin.H{"error": "无权限更新此文档或文档不存在"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "No permission to update this document or document not found"})
 		return
 	}
 
@@ -172,20 +172,20 @@ func (h *documentHandler) PublishDoc(c *gin.Context) {
 	// 从上下文中获取当前用户ID
 	userIdStr, exists := middleware.GetUserID(c)
 	if !exists {
-		logger.Error("未找到用户ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("User ID not found")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	doc, err := h.service.PublishDoc(documentID, userIdStr)
 	if err != nil {
-		logger.Error("发布文档失败", zap.Error(err), zap.String("documentID", documentID))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to publish document", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	if doc == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		return
 	}
 
@@ -199,19 +199,19 @@ func (h *documentHandler) UnpublishDoc(c *gin.Context) {
 
 	userIdStr, exists := middleware.GetUserID(c)
 	if !exists {
-		logger.Error("未找到用户ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("User ID not found")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 	doc, err := h.service.UnpublishDoc(documentID, userIdStr)
 	if err != nil {
-		logger.Error("取消发布文档失败", zap.Error(err), zap.String("documentID", documentID))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to unpublish document", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	if doc == nil {
-		c.JSON(http.StatusNotFound, gin.H{"error": "文档不存在"})
+		c.JSON(http.StatusNotFound, gin.H{"error": "Document not found"})
 		return
 	}
 
@@ -226,22 +226,22 @@ func (h *documentHandler) DeleteDoc(c *gin.Context) {
 	// 使用辅助函数从上下文中获取用户ID
 	userIdStr, exists := middleware.GetUserID(c)
 	if !exists {
-		logger.Error("未找到用户ID")
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("User ID not found")
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	logger.Info("删除文档", zap.String("documentID", documentID), zap.String("userID", userIdStr))
+	logger.Info("Deleting document", zap.String("documentID", documentID), zap.String("userID", userIdStr))
 
 	success, err := h.service.DeleteDoc(documentID, userIdStr)
 	if err != nil {
-		logger.Error("删除文档失败", zap.Error(err), zap.String("documentID", documentID))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to delete document", zap.Error(err), zap.String("documentID", documentID))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
 	if !success {
-		c.JSON(http.StatusForbidden, gin.H{"error": "无权限删除此文档或文档不存在"})
+		c.JSON(http.StatusForbidden, gin.H{"error": "No permission to delete this document or document not found"})
 		return
 	}
 
@@ -258,38 +258,38 @@ func (h *documentHandler) CloudinarySignRequest(c *gin.Context) {
 	// 读取请求体内容用于日志记录
 	bodyBytes, _ := c.GetRawData()
 	bodyString := string(bodyBytes)
-	logger.Info("Cloudinary签名请求体", zap.String("body", bodyString))
+	logger.Info("Cloudinary signature request body", zap.String("body", bodyString))
 
 	// 重新设置请求体以供后续绑定使用
 	c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 
 	if err := c.ShouldBindJSON(&requestData); err != nil {
-		logger.Error("解析Cloudinary签名参数失败", zap.Error(err))
-		c.JSON(http.StatusBadRequest, gin.H{"error": "无效的请求格式"})
+		logger.Error("Failed to parse Cloudinary signature parameters", zap.Error(err))
+		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format"})
 		return
 	}
 
 	// 记录要签名的参数
 	paramsJson, _ := json.Marshal(requestData.ParamsToSign)
-	logger.Info("Cloudinary参数", zap.String("params", string(paramsJson)))
+	logger.Info("Cloudinary parameters", zap.String("params", string(paramsJson)))
 
 	// // 验证用户权限
 	// virtualUserID := c.GetHeader("X-Virtual-User-ID")
 	// if virtualUserID == "" {
-	// 	logger.Error("未提供用户ID，无法生成Cloudinary签名")
-	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "未授权"})
+	// 	logger.Error("No user ID provided, cannot generate Cloudinary signature")
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 	// 	return
 	// }
 
 	// 签名参数
 	signature, err := h.cloudService.SignRequest(requestData.ParamsToSign)
 	if err != nil {
-		logger.Error("生成Cloudinary签名失败", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to make Cloudinary signature", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 
-	logger.Info("生成Cloudinary签名成功", zap.String("signature", signature))
+	logger.Info("Successfully made Cloudinary signature", zap.String("signature", signature))
 
 	// 返回签名结果
 	c.JSON(http.StatusOK, gin.H{"signature": signature})
@@ -316,15 +316,15 @@ func (h *documentHandler) GetPublishedDocs(c *gin.Context) {
 		limit = 100
 	}
 
-	logger.Info("获取公开文章列表",
+	logger.Info("Getting published articles list",
 		zap.Int("page", page),
 		zap.Int("limit", limit))
 
 	// 调用服务层获取数据
 	docs, total, err := h.service.GetPublishedDocs(page, limit)
 	if err != nil {
-		logger.Error("获取公开文章失败", zap.Error(err))
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "内部服务器错误"})
+		logger.Error("Failed to get published articles", zap.Error(err))
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Internal server error"})
 		return
 	}
 

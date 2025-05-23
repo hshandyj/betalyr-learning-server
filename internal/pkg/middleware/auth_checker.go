@@ -49,7 +49,7 @@ func GetAuthType(c *gin.Context) (AuthType, bool) {
 func parseJWTToken(token string) string {
 	// 检查令牌格式，Firebase令牌格式为 "Bearer xxxxx.yyyyy.zzzzz"
 	if !strings.HasPrefix(token, "Bearer ") {
-		logger.Warn("令牌格式错误，缺少Bearer前缀")
+		logger.Warn("Token format error, missing Bearer prefix")
 		return ""
 	}
 
@@ -59,58 +59,58 @@ func parseJWTToken(token string) string {
 	// 按点分割，获取三个部分
 	parts := strings.Split(tokenOnly, ".")
 	if len(parts) != 3 {
-		logger.Warn("令牌格式错误，不是有效的JWT格式")
+		logger.Warn("Token format error, not a valid JWT format")
 		return ""
 	}
 
 	// 解码payload部分（第二部分）
 	payload, err := base64UrlDecode(parts[1])
 	if err != nil {
-		logger.Error("解码JWT payload失败", zap.Error(err))
+		logger.Error("Failed to decode JWT payload", zap.Error(err))
 		return ""
 	}
 
 	// 解析JSON
 	var claims map[string]interface{}
 	if err := json.Unmarshal(payload, &claims); err != nil {
-		logger.Error("解析JWT payload JSON失败", zap.Error(err))
+		logger.Error("Failed to parse JWT payload JSON", zap.Error(err))
 		return ""
 	}
 
 	// 从claims中提取用户ID
 	// Firebase通常使用uid或sub字段作为用户ID
 	if uid, ok := claims["uid"].(string); ok && uid != "" {
-		logger.Info("从Firebase JWT中提取到uid", zap.String("uid", uid))
+		logger.Info("Extracted uid from Firebase JWT", zap.String("uid", uid))
 		return uid
 	}
 
 	if sub, ok := claims["sub"].(string); ok && sub != "" {
-		logger.Info("从Firebase JWT中提取到sub", zap.String("sub", sub))
+		logger.Info("Extracted sub from Firebase JWT", zap.String("sub", sub))
 		return sub
 	}
 
 	// Firebase也可能在user_id字段中存储用户ID
 	if userId, ok := claims["user_id"].(string); ok && userId != "" {
-		logger.Info("从Firebase JWT中提取到user_id", zap.String("user_id", userId))
+		logger.Info("Extracted user_id from Firebase JWT", zap.String("user_id", userId))
 		return userId
 	}
 
 	// 检查Firebase特有的字段
 	if identities, ok := claims["firebase"].(map[string]interface{}); ok {
 		if sign_in_provider, exists := identities["sign_in_provider"].(string); exists {
-			logger.Info("检测到Firebase认证", zap.String("provider", sign_in_provider))
+			logger.Info("Detected Firebase authentication", zap.String("provider", sign_in_provider))
 		}
 	}
 
 	// 尝试使用email作为最后的备选
 	if email, ok := claims["email"].(string); ok && email != "" {
-		logger.Info("使用email作为用户ID", zap.String("email", email))
+		logger.Info("Using email as user ID", zap.String("email", email))
 		return email
 	}
 
 	// 记录完整的claims以便调试
 	claimsJson, _ := json.Marshal(claims)
-	logger.Warn("Firebase JWT中没有找到有效的用户标识", zap.String("claims", string(claimsJson)))
+	logger.Warn("No valid user identifier found in Firebase JWT", zap.String("claims", string(claimsJson)))
 	return ""
 }
 
@@ -140,13 +140,13 @@ func AuthChecker() gin.HandlerFunc {
 
 		// 检查是否有任意一种认证方式
 		if virtualUserId == "" && authorization == "" {
-			logger.Warn("请求缺少身份验证",
+			logger.Warn("Request missing authentication",
 				zap.String("path", c.Request.URL.Path),
 				zap.String("method", c.Request.Method),
 				zap.String("ip", c.ClientIP()),
 			)
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error": "缺少身份验证，请提供X-Virtual-User-ID或Authorization",
+				"error": "Missing authentication, please provide X-Virtual-User-ID or Authorization",
 			})
 			c.Abort() // 终止请求处理
 			return
@@ -161,7 +161,7 @@ func AuthChecker() gin.HandlerFunc {
 			userId = parseJWTToken(authorization)
 			if userId != "" {
 				authType = AuthTypeJWT
-				logger.Info("使用JWT令牌认证",
+				logger.Info("Using JWT token authentication",
 					zap.String("user_id", userId),
 					zap.String("path", c.Request.URL.Path),
 				)
@@ -170,14 +170,14 @@ func AuthChecker() gin.HandlerFunc {
 				if virtualUserId != "" {
 					userId = virtualUserId
 					authType = AuthTypeVirtual
-					logger.Info("JWT令牌无效，使用虚拟用户ID认证",
+					logger.Info("JWT token invalid, using virtual user ID authentication",
 						zap.String("virtual_user_id", virtualUserId),
 						zap.String("path", c.Request.URL.Path),
 					)
 				} else {
 					// 两种认证方式都无效
 					c.JSON(http.StatusUnauthorized, gin.H{
-						"error": "提供的认证信息无效",
+						"error": "Invalid authentication information provided",
 					})
 					c.Abort()
 					return
@@ -187,7 +187,7 @@ func AuthChecker() gin.HandlerFunc {
 			// 只有虚拟用户ID
 			userId = virtualUserId
 			authType = AuthTypeVirtual
-			logger.Info("使用虚拟用户ID认证",
+			logger.Info("Using virtual user ID authentication",
 				zap.String("virtual_user_id", virtualUserId),
 				zap.String("path", c.Request.URL.Path),
 			)
