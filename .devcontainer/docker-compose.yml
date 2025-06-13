@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   app:
-    image: golang:1.21-bullseye
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
     volumes:
       - ..:/workspace
       # 避免Go模块缓存重复下载

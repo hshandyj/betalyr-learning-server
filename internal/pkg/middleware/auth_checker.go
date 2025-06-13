@@ -161,10 +161,6 @@ func AuthChecker() gin.HandlerFunc {
 			userId = parseJWTToken(authorization)
 			if userId != "" {
 				authType = AuthTypeJWT
-				logger.Info("Using JWT token authentication",
-					zap.String("user_id", userId),
-					zap.String("path", c.Request.URL.Path),
-				)
 			} else {
 				// JWT解析失败，尝试使用虚拟用户ID
 				if virtualUserId != "" {
@@ -187,10 +183,6 @@ func AuthChecker() gin.HandlerFunc {
 			// 只有虚拟用户ID
 			userId = virtualUserId
 			authType = AuthTypeVirtual
-			logger.Info("Using virtual user ID authentication",
-				zap.String("virtual_user_id", virtualUserId),
-				zap.String("path", c.Request.URL.Path),
-			)
 		}
 
 		// 将用户ID和认证类型存储到上下文中，供后续处理函数使用

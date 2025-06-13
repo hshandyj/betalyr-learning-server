@@ -19,7 +19,7 @@
     "forwardPorts": [8000, 5432, 6379],
   
     // 容器启动后自动执行的命令
-    "postCreateCommand": "cd /workspace && go mod download && go install github.com/cosmtrek/air@v1.49.0",
+    "postCreateCommand": "cd /workspace && go mod download",
   
     // 挂载本地目录到容器（避免文件权限问题）
     "mounts": [

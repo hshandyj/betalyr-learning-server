@@ -16,6 +16,10 @@ func registerPublicRoutes(r *gin.Engine, cfg *config.Config) {
 	documentService := service.NewDocumentService(documentRepo)
 	cloudinaryService := service.NewCloudinaryService(cfg)
 
+	// 初始化媒体相关依赖
+	mediaRepo := repository.NewMediaRepository()
+	mediaHandler := handler.NewMediaHandler(mediaRepo)
+
 	// 初始化处理器
 	documentHandler := handler.NewDocumentHandler(documentService, cloudinaryService)
 
@@ -25,5 +29,9 @@ func registerPublicRoutes(r *gin.Engine, cfg *config.Config) {
 		public.GET("/documents", documentHandler.GetPublishedDocs)
 		// Cloudinary签名接口
 		public.POST("/sign-cloudinary", documentHandler.CloudinarySignRequest)
+
+		// 公开媒体相关接口
+		public.GET("/media/video", mediaHandler.GetVideos)
+		public.GET("/media/audio", mediaHandler.GetAudios)
 	}
 }
