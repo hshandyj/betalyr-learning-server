@@ -6,10 +6,10 @@ set -e
 DOMAIN="735566.xyz"
 EMAIL="your-email@example.com"  # 请更改为您的邮箱
 
-echo "🔐 开始设置SSL证书..."
+echo "🔐 Setting up SSL certificates..."
 
 # 检查域名解析
-echo "🔍 检查域名解析..."
+echo "🔍 Checking domain name resolution..."
 for subdomain in "" "www" "api"; do
     if [ -n "$subdomain" ]; then
         check_domain="${subdomain}.${DOMAIN}"
@@ -17,20 +17,20 @@ for subdomain in "" "www" "api"; do
         check_domain="$DOMAIN"
     fi
     
-    echo "检查 $check_domain..."
+    echo "Checking $check_domain..."
     if ! nslookup $check_domain > /dev/null 2>&1; then
-        echo "❌ $check_domain 域名解析失败，请检查DNS设置"
+        echo "❌ $check_domain domain name resolution failed, please check DNS settings"
         exit 1
     fi
 done
 
-echo "✅ 域名解析正常"
+echo "✅ Domain name resolution is normal"
 
 # 停止nginx（如果正在运行）
 sudo systemctl stop nginx || true
 
 # 获取SSL证书
-echo "📜 获取SSL证书..."
+echo "📜 Getting SSL certificates..."
 sudo certbot certonly \
     --standalone \
     --email $EMAIL \
@@ -39,7 +39,7 @@ sudo certbot certonly \
     --domains $DOMAIN,www.$DOMAIN,api.$DOMAIN
 
 # 复制nginx配置
-echo "⚙️ 配置Nginx..."
+echo "⚙️ Configuring Nginx..."
 sudo cp nginx.conf /etc/nginx/sites-available/betalyr-learning
 sudo ln -sf /etc/nginx/sites-available/betalyr-learning /etc/nginx/sites-enabled/
 
@@ -47,29 +47,29 @@ sudo ln -sf /etc/nginx/sites-available/betalyr-learning /etc/nginx/sites-enabled
 sudo rm -f /etc/nginx/sites-enabled/default
 
 # 测试nginx配置
-echo "🧪 测试Nginx配置..."
+echo "🧪 Testing Nginx configuration..."
 sudo nginx -t
 
 # 启动nginx
-echo "🔄 启动Nginx..."
+echo "🔄 Starting Nginx..."
 sudo systemctl start nginx
 sudo systemctl enable nginx
 
 # 设置证书自动续期
-echo "🔄 设置证书自动续期..."
+echo "🔄 Setting up certificate auto-renewal..."
 sudo crontab -l 2>/dev/null | grep -v "certbot renew" | sudo crontab -
 (sudo crontab -l 2>/dev/null; echo "0 12 * * * /usr/bin/certbot renew --quiet") | sudo crontab -
 
 # 测试证书续期
-echo "🧪 测试证书续期..."
+echo "🧪 Testing certificate renewal..."
 sudo certbot renew --dry-run
 
-echo "✅ SSL证书设置完成！"
-echo "🌐 您的网站现在可以通过HTTPS访问："
+echo "✅ SSL certificates setup complete!"
+echo "🌐 Your website is now accessible via HTTPS:"
 echo "  - https://$DOMAIN"
 echo "  - https://www.$DOMAIN"
 echo "  - https://api.$DOMAIN"
 
 # 检查SSL证书状态
-echo "🔍 检查SSL证书状态..."
+echo "🔍 Checking SSL certificate status..."
 openssl x509 -in /etc/letsencrypt/live/$DOMAIN/cert.pem -text -noout | grep "Not After" 
