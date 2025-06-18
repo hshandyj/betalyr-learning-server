@@ -37,4 +37,4 @@ sudo ufw allow 80
 sudo ufw allow 443
 sudo ufw --force enable
 
-echo "服务器配置完成！请重新登录以使docker组权限生效。" 
+echo "server setup complete! Please re-login to make the docker group permissions take effect." 
