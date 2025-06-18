@@ -17,7 +17,7 @@ func InitLogger(env string) {
 	// 创建日志目录
 	logDir := "logs"
 	if err := os.MkdirAll(logDir, 0755); err != nil {
-		panic("创建日志目录失败: " + err.Error())
+		panic("Failed to create log directory: " + err.Error())
 	}
 
 	// 设置日志级别

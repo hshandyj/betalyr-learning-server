@@ -1,0 +1,76 @@
+version: '3.8'
+
+services:
+  app:
+    image: betalyr-learning-server:latest
+    container_name: betalyr-learning-app
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8000:8000"  # 只在本地监听，通过nginx代理
+    environment:
+      - APP_ENV=production
+      - DB_HOST=postgres
+      - REDIS_HOST=redis
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - betalyr-network
+    volumes:
+      - ./logs:/app/logs
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: betalyr-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_NAME}
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    networks:
+      - betalyr-network
+    ports:
+      - "127.0.0.1:5432:5432"  # 本地访问数据库
+
+  redis:
+    image: redis:7-alpine
+    container_name: betalyr-redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    networks:
+      - betalyr-network
+    command: redis-server --appendonly yes
+
+  # 数据库备份服务
+  postgres-backup:
+    image: postgres:15-alpine
+    container_name: betalyr-backup
+    depends_on:
+      - postgres
+    environment:
+      - PGPASSWORD=${DB_PASSWORD}
+    volumes:
+      - ./backups:/backups
+      - ./scripts:/scripts
+    networks:
+      - betalyr-network
+    command: >
+      sh -c "
+        while true; do
+          pg_dump -h postgres -U ${DB_USER} -d ${DB_NAME} > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql
+          find /backups -name '*.sql' -mtime +7 -delete
+          sleep 86400
+        done
+      "
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  betalyr-network:
+    driver: bridge 

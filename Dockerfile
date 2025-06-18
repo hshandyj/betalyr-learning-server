@@ -9,6 +9,10 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o betalyr-learning-server ./cmd/betalyr-l
 
 # 运行阶段
 FROM alpine:latest
+
+# 安装 ffmpeg 和必要的依赖
+RUN apk add --no-cache ffmpeg
+
 WORKDIR /app
 COPY --from=builder /app/betalyr-learning-server .
 COPY configs/config.yaml ./configs/

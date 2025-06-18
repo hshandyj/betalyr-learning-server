@@ -13,6 +13,7 @@ type Config struct {
 	DB         DBConfig         `yaml:"db"`
 	Server     ServerConfig     `yaml:"server"`
 	Cloudinary CloudinaryConfig `yaml:"cloudinary"`
+	R2         R2Config         `yaml:"r2"`
 }
 
 // DBConfig 数据库配置
@@ -35,6 +36,16 @@ type CloudinaryConfig struct {
 	CloudName string `yaml:"cloud_name"`
 	APIKey    string `yaml:"api_key"`
 	APISecret string `yaml:"api_secret"`
+}
+
+// R2Config Cloudflare R2配置
+type R2Config struct {
+	Endpoint        string `yaml:"endpoint"`
+	AccountID       string `yaml:"account_id"`
+	AccessKeyID     string `yaml:"access_key_id"`
+	SecretAccessKey string `yaml:"secret_access_key"`
+	Bucket          string `yaml:"bucket"`
+	PublicURL       string `yaml:"public_url"`
 }
 
 // expandEnvVars 展开环境变量
@@ -83,6 +94,14 @@ func processConfig(cfg *Config) {
 	cfg.Cloudinary.CloudName = expandEnvVars(cfg.Cloudinary.CloudName)
 	cfg.Cloudinary.APIKey = expandEnvVars(cfg.Cloudinary.APIKey)
 	cfg.Cloudinary.APISecret = expandEnvVars(cfg.Cloudinary.APISecret)
+
+	// 处理R2配置
+	cfg.R2.Endpoint = expandEnvVars(cfg.R2.Endpoint)
+	cfg.R2.AccountID = expandEnvVars(cfg.R2.AccountID)
+	cfg.R2.AccessKeyID = expandEnvVars(cfg.R2.AccessKeyID)
+	cfg.R2.SecretAccessKey = expandEnvVars(cfg.R2.SecretAccessKey)
+	cfg.R2.Bucket = expandEnvVars(cfg.R2.Bucket)
+	cfg.R2.PublicURL = expandEnvVars(cfg.R2.PublicURL)
 }
 
 // NewConfig 创建配置
@@ -104,6 +123,14 @@ func NewConfig() *Config {
 			CloudName: "",
 			APIKey:    "",
 			APISecret: "",
+		},
+		R2: R2Config{
+			Endpoint:        "",
+			AccountID:       "",
+			AccessKeyID:     "",
+			SecretAccessKey: "",
+			Bucket:          "",
+			PublicURL:       "",
 		},
 	}
 

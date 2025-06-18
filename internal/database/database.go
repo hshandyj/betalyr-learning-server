@@ -5,6 +5,7 @@ import (
 	"log"
 
 	"betalyr-learning-server/internal/config"
+	"betalyr-learning-server/internal/models"
 
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
@@ -38,5 +39,16 @@ func Initialize(config *config.Config) error {
 	}
 
 	DB = db
+
+	// 自动迁移数据库表
+	err = db.AutoMigrate(
+		&models.Document{},
+		&models.Media{},
+	)
+	if err != nil {
+		log.Printf("Failed to migrate database: %v", err)
+		return err
+	}
+
 	return nil
 }

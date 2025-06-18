@@ -107,7 +107,7 @@ func (s *documentService) UpdateDoc(id string, ownerID string, updates map[strin
 
 	// 验证文档所有者
 	if doc.OwnerID != ownerID {
-		logger.Warn("用户尝试更新非自己的文档",
+		logger.Warn("User attempted to update a document that is not their own",
 			zap.String("documentID", id),
 			zap.String("docOwnerID", doc.OwnerID),
 			zap.String("requestUserID", ownerID))
@@ -116,7 +116,7 @@ func (s *documentService) UpdateDoc(id string, ownerID string, updates map[strin
 
 	// 记录更新前的文档状态
 	beforeJson, _ := json.Marshal(doc)
-	logger.Info("更新前的文档状态", zap.String("documentID", id), zap.String("before", string(beforeJson)))
+	logger.Info("Document state before update", zap.String("documentID", id), zap.String("before", string(beforeJson)))
 
 	// 应用更新
 	if title, ok := updates["title"].(string); ok {
@@ -131,13 +131,13 @@ func (s *documentService) UpdateDoc(id string, ownerID string, updates map[strin
 	if iconImage, exists := updates["iconImage"]; exists {
 		// 检查是否为null
 		if iconImage == nil {
-			logger.Info("设置iconImage为null", zap.String("documentID", id))
+			logger.Info("Setting iconImage to null", zap.String("documentID", id))
 			doc.IconImage = nil // 如果前端传入null，则将字段设置为nil
 		} else if iconImageMap, ok := iconImage.(map[string]interface{}); ok {
 			// 如果是map类型，则按照原来的逻辑处理
 			if url, urlOk := iconImageMap["url"].(string); urlOk {
 				timestamp, _ := iconImageMap["timeStamp"].(float64)
-				logger.Info("设置新的iconImage",
+				logger.Info("Setting new iconImage",
 					zap.String("documentID", id),
 					zap.String("url", url),
 					zap.Float64("timeStamp", timestamp))
@@ -148,7 +148,7 @@ func (s *documentService) UpdateDoc(id string, ownerID string, updates map[strin
 			}
 		} else {
 			// 记录意外的类型
-			logger.Warn("iconImage的值类型意外",
+			logger.Warn("Unexpected type for iconImage",
 				zap.String("documentID", id),
 				zap.String("type", fmt.Sprintf("%T", iconImage)))
 		}
@@ -188,12 +188,12 @@ func (s *documentService) UpdateDoc(id string, ownerID string, updates map[strin
 
 	// 记录更新后的文档状态
 	afterJson, _ := json.Marshal(doc)
-	logger.Info("更新后的文档状态", zap.String("documentID", id), zap.String("after", string(afterJson)))
+	logger.Info("Document state after update", zap.String("documentID", id), zap.String("after", string(afterJson)))
 
 	// 保存更新
 	err = s.repo.Update(doc)
 	if err != nil {
-		logger.Error("保存更新失败", zap.String("documentID", id), zap.Error(err))
+		logger.Error("Failed to save update", zap.String("documentID", id), zap.Error(err))
 		return nil, err
 	}
 
@@ -213,7 +213,7 @@ func (s *documentService) PublishDoc(id string, ownerID string) (*models.Documen
 
 	// 验证文档所有者
 	if doc.OwnerID != ownerID {
-		logger.Warn("用户尝试发布非自己的文档",
+		logger.Warn("User attempted to publish a document that is not their own",
 			zap.String("documentID", id),
 			zap.String("docOwnerID", doc.OwnerID),
 			zap.String("requestUserID", ownerID))
@@ -246,7 +246,7 @@ func (s *documentService) UnpublishDoc(id string, ownerID string) (*models.Docum
 
 	// 验证文档所有者
 	if doc.OwnerID != ownerID {
-		logger.Warn("用户尝试取消发布非自己的文档",
+		logger.Warn("User attempted to unpublish a document that is not their own",
 			zap.String("documentID", id),
 			zap.String("docOwnerID", doc.OwnerID),
 			zap.String("requestUserID", ownerID))
